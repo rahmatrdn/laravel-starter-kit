@@ -1,0 +1,140 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use Illuminate\Http\Request;
+use App\Entities\ResponseEntity;
+use Illuminate\Contracts\View\View;
+use App\Http\Controllers\Controller;
+use App\Usecase\UserUsecase;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
+
+class UserController extends Controller
+{
+    protected $usecase;
+    protected $page = [
+        "route" => "user",
+        "title" => "Pengguna Aplikasi",
+    ];
+    protected $baseRedirect;
+
+    public function __construct(UserUsecase $usecase)
+    {
+        $this->usecase = $usecase;
+        $this->baseRedirect = "admin/" . $this->page['route'];
+    }
+
+    public function index(): View | Response
+    {
+        $response = $this->usecase->getAll();
+        
+        if (!$response['success'] || empty($response['data']['list'])) {
+            $users = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
+        } else {
+            $users = $response['data']['list'];
+        }
+
+        return view("_admin.users.index", [
+            'users' => $users,
+            'page' => $this->page,
+        ]);
+    }
+
+    public function add(): View | Response
+    {
+        return view("_admin.users.add", [
+            'page' => $this->page,
+        ]);
+    }
+
+    public function doCreate(Request $request): RedirectResponse
+    {
+        $process = $this->usecase->create(
+            data: $request,
+        );
+
+        if ($process['success']) {
+            return redirect()
+                ->route('admin.users.index')
+                ->with('success', ResponseEntity::SUCCESS_MESSAGE_CREATED);
+        } else {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', $process['message'] ?? ResponseEntity::DEFAULT_ERROR_MESSAGE);
+        }
+    }
+
+    public function update(int $id): View|RedirectResponse | Response
+    {
+        $data = $this->usecase->getByID($id);
+
+        if (empty($data['data'])) {
+            return redirect()
+                ->intended($this->baseRedirect)
+                ->with('error', ResponseEntity::DEFAULT_ERROR_MESSAGE);
+        }
+        $data = $data['data'] ?? [];
+
+        return view("_admin.users.update", [
+            'data' => (object) $data,
+            'userId' => $id,
+            'page' => $this->page,
+        ]);
+    }
+
+    public function doUpdate(int $id, Request $request): JsonResponse
+    {
+        $process = $this->usecase->update(
+            data: $request,
+            id: $id,
+        );
+
+        if ($process['success']) {
+            return response()->json([
+                "success" => true,
+                "message" => ResponseEntity::SUCCESS_MESSAGE_UPDATED,
+                "redirect" => $this->page['route']
+            ]);
+        } else {
+            return response()->json([
+                "success" => false,
+                "message" => $process['message'] ?? ResponseEntity::DEFAULT_ERROR_MESSAGE,
+                "redirect" => $this->page['route']
+            ]);
+        }
+    }
+
+    public function delete(int $id): RedirectResponse
+    {
+        $process = $this->usecase->delete(id: $id);
+
+        if ($process['success']) {
+            return redirect()
+                ->route('admin.users.index')
+                ->with('success', ResponseEntity::SUCCESS_MESSAGE_DELETED);
+        } else {
+            return redirect()
+                ->route('admin.users.index')
+                ->with('error', $process['message'] ?? ResponseEntity::DEFAULT_ERROR_MESSAGE);
+        }
+    }
+
+    public function resetPassword(int $id): RedirectResponse
+    {
+        $resetProcess = $this->usecase->resetPassword(id: $id);
+
+        if ($resetProcess['success']) {
+            return redirect()
+                ->route('admin.users.index')
+                ->with('success', 'Password berhasil direset menjadi default');
+        } else {
+            return redirect()
+                ->route('admin.users.index')
+                ->with('error', $resetProcess['message'] ?? ResponseEntity::DEFAULT_ERROR_MESSAGE);
+        }
+    }
+}
