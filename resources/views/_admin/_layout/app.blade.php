@@ -14,6 +14,15 @@
     <!-- Styles / Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    <!-- NProgress -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.css" />
+    <style>
+        #nprogress .bar {
+            height: 4px !important;
+            background: #2563eb !important;
+            /* Update color to match theme (blue-600) if needed, or keep default */
+        }
+    </style>
 </head>
 
 <body>
@@ -72,12 +81,92 @@
 
     <!-- Content -->
     <div class="w-full lg:ps-64 bg-gray-50 dark:bg-neutral-900 min-h-screen">
-        <div class="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div id="main-content" class="p-4 sm:p-6 space-y-4 sm:space-y-6">
             @yield('content')
         </div>
     </div>
     <!-- End Content -->
 
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <!-- NProgress -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            console.log('SPA Script Loaded');
+
+            // Intercept clicks on elements with 'navigate' attribute
+            $('body').on('click', 'a[navigate]', function(e) {
+                e.preventDefault();
+                var url = $(this).attr('href');
+                console.log('SPA Navigation clicked:', url);
+
+                if (!url || url.startsWith('#') || url.startsWith('javascript:')) {
+                    return;
+                }
+
+                loadPage(url);
+            });
+
+            function loadPage(url) {
+                // Start Loading
+                NProgress.start();
+
+                $.ajax({
+                    url: url,
+                    success: function(data) {
+                        // Create a virtual DOM to parse the response
+                        var $temp = $('<div>').html(data);
+
+                        // Extract new content
+                        var newContent = $temp.find('#main-content').html();
+                        var newSidebar = $temp.find('#hs-application-sidebar').html();
+
+                        if (newContent) {
+                            $('#main-content').html(newContent);
+                            console.log('Content updated');
+                        } else {
+                            console.error('#main-content not found in response');
+                            // Fallback
+                            window.location.href = url;
+                            return;
+                        }
+
+                        if (newSidebar) {
+                            $('#hs-application-sidebar').html(newSidebar);
+                            console.log('Sidebar updated');
+                        }
+
+                        // Update URL
+                        if (window.location.href !== url) {
+                            window.history.pushState({
+                                path: url
+                            }, '', url);
+                        }
+
+                        // Re-initialize plugins
+                        if (window.HSStaticMethods) {
+                            window.HSStaticMethods.autoInit();
+                        }
+
+                        // Finish Loading
+                        NProgress.done();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('SPA Load Error:', error);
+                        window.location.href = url; // Fallback to normal navigation on error
+                    }
+                });
+            }
+
+            // Handle Back Button
+            window.onpopstate = function(e) {
+                window.location.reload();
+            };
+        });
+    </script>
     @stack('scripts')
 
 </body>
