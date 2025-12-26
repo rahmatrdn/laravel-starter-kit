@@ -30,7 +30,7 @@ class UserController extends Controller
     public function index(): View | Response
     {
         $response = $this->usecase->getAll();
-        
+
         if (!$response['success'] || empty($response['data']['list'])) {
             $users = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
         } else {
@@ -86,7 +86,7 @@ class UserController extends Controller
         ]);
     }
 
-    public function doUpdate(int $id, Request $request): JsonResponse
+    public function doUpdate(int $id, Request $request): RedirectResponse
     {
         $process = $this->usecase->update(
             data: $request,
@@ -94,17 +94,14 @@ class UserController extends Controller
         );
 
         if ($process['success']) {
-            return response()->json([
-                "success" => true,
-                "message" => ResponseEntity::SUCCESS_MESSAGE_UPDATED,
-                "redirect" => $this->page['route']
-            ]);
+            return redirect()
+                ->route('admin.users.index')
+                ->with('success', ResponseEntity::SUCCESS_MESSAGE_UPDATED);
         } else {
-            return response()->json([
-                "success" => false,
-                "message" => $process['message'] ?? ResponseEntity::DEFAULT_ERROR_MESSAGE,
-                "redirect" => $this->page['route']
-            ]);
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', $process['message'] ?? ResponseEntity::DEFAULT_ERROR_MESSAGE);
         }
     }
 

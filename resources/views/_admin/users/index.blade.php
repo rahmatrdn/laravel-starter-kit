@@ -115,8 +115,8 @@
                                                     href="{{ route('admin.users.update', $user->id) }}">
                                                     Edit
                                                 </a>
-                                                <form action="{{ route('admin.users.delete', $user->id) }}" method="POST"
-                                                    class="inline"
+                                                <form navigate-form action="{{ route('admin.users.delete', $user->id) }}"
+                                                    method="POST" class="inline"
                                                     onsubmit="return confirm('Are you sure you want to delete {{ $user->name }}? This action cannot be undone.')">
                                                     @csrf
                                                     @method('DELETE')

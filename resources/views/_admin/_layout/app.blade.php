@@ -28,7 +28,7 @@
 <body>
     <!-- ========== HEADER ========== -->
     <header
-        class="inset-x-0 flex flex-wrap md:justify-start md:flex-nowrap z-[48] w-full bg-white border-b border-gray-200 text-sm py-2.5 lg:py-0 md:py-0 xl:py-0 lg:ps-65 dark:bg-neutral-800 dark:border-neutral-700">
+        class="inset-x-0 flex flex-wrap md:justify-start md:flex-nowrap z-[48] w-full bg-white border-b border-gray-200 text-sm py-2.5 lg:py-0 xl:py-0 lg:ps-65 dark:bg-neutral-800 dark:border-neutral-700">
         <nav class="px-4 sm:px-6 flex basis-full items-center w-full mx-auto">
             <div class="me-5 lg:me-0 lg:hidden flex items-center">
                 <!-- Navigation Toggle -->
@@ -82,6 +82,9 @@
     <!-- Content -->
     <div class="w-full lg:ps-64 bg-gray-50 dark:bg-neutral-900 min-h-screen">
         <div id="main-content" class="p-4 sm:p-6 space-y-4 sm:space-y-6">
+            @if (session('success'))
+                <div id="spa-flash-success" style="display: none;">{{ session('success') }}</div>
+            @endif
             @yield('content')
         </div>
     </div>
@@ -93,9 +96,63 @@
     <!-- NProgress -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
 
+    <style>
+        @keyframes toast-pop-in {
+            0% {
+                opacity: 0;
+                transform: scale(0.9) translateY(10px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .animate-toast-pop {
+            animation: toast-pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+    </style>
     <script>
         $(document).ready(function() {
             console.log('SPA Script Loaded');
+
+            // Helper to update content from HTML response
+            function handleSpaResponse(data, urlToPush) {
+                // Create a virtual DOM to parse the response
+                var $temp = $('<div>').html(data);
+
+                // Extract new content
+                var newContent = $temp.find('#main-content').html();
+                var newSidebar = $temp.find('#hs-application-sidebar').html();
+
+                if (newContent) {
+                    $('#main-content').html(newContent);
+                    console.log('Content updated');
+                } else {
+                    console.error('#main-content not found in response');
+                    return false;
+                }
+
+                if (newSidebar) {
+                    $('#hs-application-sidebar').html(newSidebar);
+                    console.log('Sidebar updated');
+                }
+
+                // Update URL
+                if (urlToPush && window.location.href !== urlToPush) {
+                    window.history.pushState({
+                        path: urlToPush
+                    }, '', urlToPush);
+                }
+
+                // Re-initialize plugins
+                if (window.HSStaticMethods) {
+                    window.HSStaticMethods.autoInit();
+                }
+
+                return true;
+            }
 
             // Intercept clicks on elements with 'navigate' attribute
             $('body').on('click', 'a[navigate]', function(e) {
@@ -105,6 +162,16 @@
 
                 if (!url || url.startsWith('#') || url.startsWith('javascript:')) {
                     return;
+                }
+
+                // Close Sidebar on Mobile if it's open
+                try {
+                    if (window.HSOverlay) {
+                        HSOverlay.close(document.querySelector('#hs-application-sidebar'));
+                    }
+                } catch (error) {
+                    // Ignore errors if overlay library isn't fully loaded or element invalid
+                    console.log('Sidebar Close Debug:', error);
                 }
 
                 loadPage(url);
@@ -117,41 +184,9 @@
                 $.ajax({
                     url: url,
                     success: function(data) {
-                        // Create a virtual DOM to parse the response
-                        var $temp = $('<div>').html(data);
-
-                        // Extract new content
-                        var newContent = $temp.find('#main-content').html();
-                        var newSidebar = $temp.find('#hs-application-sidebar').html();
-
-                        if (newContent) {
-                            $('#main-content').html(newContent);
-                            console.log('Content updated');
-                        } else {
-                            console.error('#main-content not found in response');
-                            // Fallback
+                        if (!handleSpaResponse(data, url)) {
                             window.location.href = url;
-                            return;
                         }
-
-                        if (newSidebar) {
-                            $('#hs-application-sidebar').html(newSidebar);
-                            console.log('Sidebar updated');
-                        }
-
-                        // Update URL
-                        if (window.location.href !== url) {
-                            window.history.pushState({
-                                path: url
-                            }, '', url);
-                        }
-
-                        // Re-initialize plugins
-                        if (window.HSStaticMethods) {
-                            window.HSStaticMethods.autoInit();
-                        }
-
-                        // Finish Loading
                         NProgress.done();
                     },
                     error: function(xhr, status, error) {
@@ -160,6 +195,155 @@
                     }
                 });
             }
+
+            // Helper to handle JSON validation errors
+            function handleValidationErrors($form, errors) {
+                // Clear previous errors
+                $form.find('.border-red-500').removeClass('border-red-500');
+                $form.find('.validation-error').remove();
+
+                // Loop through errors
+                $.each(errors, function(field, messages) {
+                    var $input = $form.find('[name="' + field + '"]');
+                    if ($input.length) {
+                        $input.addClass('border-red-500');
+                        // Use first error message
+                        var message = messages[0];
+                        $input.after('<p class="text-sm text-red-600 mt-1 validation-error">' + message +
+                            '</p>');
+                    }
+                });
+            }
+
+            // Global function for custom toast close button
+            window.tostifyCustomClose = function(el) {
+                $(el).closest('.toastify').remove();
+            };
+
+            function getToastNode(message) {
+                var html = `
+                <div class="animate-toast-pop bg-white border border-gray-200 rounded-xl shadow-lg dark:bg-neutral-800 dark:border-neutral-700" role="alert">
+                    <div class="flex p-4">
+                      <p class="text-sm text-gray-700 dark:text-neutral-400">${message}</p>
+                      <div class="ms-auto">
+                        <button onclick="tostifyCustomClose(this)" type="button" class="inline-flex shrink-0 justify-center items-center size-5 rounded-lg text-gray-800 opacity-50 hover:opacity-100 focus:outline-hidden focus:opacity-100 dark:text-white" aria-label="Close">
+                          <span class="sr-only">Close</span>
+                          <svg class="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                        </button>
+                      </div>
+                    </div>
+                </div>`;
+                var div = document.createElement('div');
+                div.innerHTML = html.trim();
+                return div.firstChild;
+            }
+
+            // Intercept form submissions with 'navigate-form' attribute
+            $('body').on('submit', 'form[navigate-form]', function(e) {
+                e.preventDefault();
+                var $form = $(this);
+                console.log('SPA Form Submit:', $form.attr('action'));
+
+                // Find submit button & Set Loading State
+                var $btn = $form.find('button[type="submit"]');
+                var originalHtml = $btn.html();
+                if ($btn.length) {
+                    $btn.prop('disabled', true).html(
+                        '<span class="animate-spin inline-block size-4 border-[3px] border-current border-t-transparent rounded-full" role="status" aria-label="loading"></span> Loading...'
+                    );
+                }
+
+                NProgress.start();
+                var formData = new FormData(this);
+                var action = $form.attr('action');
+                var method = $form.attr('method') || 'POST'; // Default to POST if not specified
+                var nativeXhr;
+
+                $.ajax({
+                    url: action,
+                    type: method,
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    xhr: function() {
+                        var xhr = new window.XMLHttpRequest();
+                        // Capture the native XHR object to access responseURL later
+                        nativeXhr = xhr;
+                        return xhr;
+                    },
+                    success: function(data, textStatus, xhr) {
+                        // Attempt to get final URL from native XHR (handles redirects)
+                        var finalUrl = (nativeXhr ? nativeXhr.responseURL : null) || action;
+                        console.log('Form Success, Final URL:', finalUrl);
+
+                        if (handleSpaResponse(data, finalUrl)) {
+                            console.log('Form SPA update success');
+
+                            // Extract dynamic message from parsed response
+                            // handleSpaResponse doesn't return the parsed DOM, so we parse again or rely on the inserted DOM.
+                            // Since handleSpaResponse just updated the DOM, we can just look for the element in document!
+                            // Wait, handleSpaResponse replaces #main-content. So #spa-flash-success should be in document now if it was in the response.
+                            var apiMessage = $('#spa-flash-success').text();
+                            var toastMessage = apiMessage ? apiMessage.trim() :
+                                "Form submitted successfully";
+
+                            // Show Toast Notification
+                            if (window.Toastify) {
+                                Toastify({
+                                    node: getToastNode(toastMessage),
+                                    duration: 3000,
+                                    className: "p-0 bg-transparent shadow-none max-w-xs",
+                                    gravity: "top",
+                                    position: "right",
+                                    stopOnFocus: true,
+                                    style: {
+                                        background: "transparent",
+                                        boxShadow: "none",
+                                    }
+                                }).showToast();
+                            }
+                        } else {
+                            window.location.reload();
+                        }
+                        NProgress.done();
+                    },
+                    error: function(xhr) {
+                        console.error('Form Error', xhr);
+                        NProgress.done();
+
+                        // Restore Button State
+                        if ($btn.length) {
+                            $btn.prop('disabled', false).html(originalHtml);
+                        }
+
+                        if (xhr.status === 422) {
+                            var response = xhr.responseJSON;
+                            if (response && response.errors) {
+                                handleValidationErrors($form, response.errors);
+                            } else {
+                                alert('Validation failed but no errors returned.');
+                            }
+                        } else {
+                            // Try to render response if it is HTML (e.g. 500 error page)
+                            // Warning: replacing body with error page might break SPA context but provides feedback.
+                            var $temp = $('<div>').html(xhr.responseText);
+                            if ($temp.find('#main-content').length) {
+                                handleSpaResponse(xhr.responseText, action);
+                            } else {
+                                // Full replacement if critical error
+                                if (xhr.responseText) {
+                                    document.open();
+                                    document.write(xhr.responseText);
+                                    document.close();
+                                } else {
+                                    alert('An error occurred: ' + xhr.status + ' ' + xhr
+                                        .statusText);
+                                }
+                            }
+                        }
+                    }
+                });
+            });
 
             // Handle Back Button
             window.onpopstate = function(e) {
