@@ -13,6 +13,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index');
         Route::get('/add', [UserController::class, 'add'])->name('add');
         Route::post('/create', [UserController::class, 'doCreate'])->name('create');
+        Route::get('/detail/{id}', [UserController::class, 'detail'])->name('detail');
         Route::get('/update/{id}', [UserController::class, 'update'])->name('update');
         Route::post('/update/{id}', [UserController::class, 'doUpdate'])->name('doUpdate');
         Route::delete('/delete/{id}', [UserController::class, 'delete'])->name('delete');

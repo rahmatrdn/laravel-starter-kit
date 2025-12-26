@@ -5,11 +5,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>@yield('title', config('app.name', 'Laravel'))</title>
+    <title>{{ env('APP_ENV') == 'local' ? '[LOCAL] ' : '' }}Laravel Starter Kit - @yield('title')</title>
 
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
 
     <!-- Styles / Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -76,12 +78,11 @@
     </header>
     <!-- ========== END HEADER ========== -->
 
-
     @include('_admin._layout.sidebar')
 
     <!-- Content -->
     <div class="w-full lg:ps-64 bg-gray-50 dark:bg-neutral-900 min-h-screen">
-        <div id="main-content" class="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div id="main-content" class="p-2 pt-10 sm:p-6 space-y-4 sm:space-y-6">
             @if (session('success'))
                 <div id="spa-flash-success" style="display: none;">{{ session('success') }}</div>
             @endif
@@ -451,17 +452,29 @@
                 }
 
                 NProgress.start();
-                var formData = new FormData(this);
                 var action = $form.attr('action');
                 var method = $form.attr('method') || 'POST'; // Default to POST if not specified
                 var nativeXhr;
+                var ajaxData;
+                var ajaxProcessData;
+                var ajaxContentType;
+
+                if (method.toUpperCase() === 'GET') {
+                    ajaxData = $form.serialize();
+                    ajaxProcessData = true;
+                    ajaxContentType = 'application/x-www-form-urlencoded; charset=UTF-8';
+                } else {
+                    ajaxData = new FormData(this);
+                    ajaxProcessData = false;
+                    ajaxContentType = false;
+                }
 
                 $.ajax({
                     url: action,
                     type: method,
-                    data: formData,
-                    processData: false,
-                    contentType: false,
+                    data: ajaxData,
+                    processData: ajaxProcessData,
+                    contentType: ajaxContentType,
                     xhr: function() {
                         var xhr = new window.XMLHttpRequest();
                         // Capture the native XHR object to access responseURL later
@@ -482,10 +495,11 @@
                             // Wait, handleSpaResponse replaces #main-content. So #spa-flash-success should be in document now if it was in the response.
                             var apiMessage = $('#spa-flash-success').text();
                             var toastMessage = apiMessage ? apiMessage.trim() :
-                                "Form submitted successfully";
+                                (method.toUpperCase() === 'GET' ? '' :
+                                    "Form submitted successfully");
 
                             // Show Toast Notification
-                            if (window.Toastify) {
+                            if (window.Toastify && toastMessage) {
                                 Toastify({
                                     node: getToastNode(toastMessage),
                                     duration: 3000,

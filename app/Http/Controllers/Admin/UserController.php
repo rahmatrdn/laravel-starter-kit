@@ -14,32 +14,32 @@ use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    protected $usecase;
-    protected $page = [
+    protected array $page = [
         "route" => "user",
         "title" => "Pengguna Aplikasi",
     ];
-    protected $baseRedirect;
 
-    public function __construct(UserUsecase $usecase)
-    {
-        $this->usecase = $usecase;
+    protected string $baseRedirect;
+
+    public function __construct(
+        protected UserUsecase $usecase
+    ) {
         $this->baseRedirect = "admin/" . $this->page['route'];
     }
 
-    public function index(): View | Response
+    public function index(Request $request): View | Response
     {
-        $response = $this->usecase->getAll();
-
-        if (!$response['success'] || empty($response['data']['list'])) {
-            $users = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
-        } else {
-            $users = $response['data']['list'];
-        }
+        $data = $this->usecase->getAll([
+            'keywords' => $request->get('keywords'),
+            'access_type' => $request->get('access_type'),
+        ]);
+        $data = $data['data']['list'];
 
         return view("_admin.users.index", [
-            'users' => $users,
+            'data' => $data,
             'page' => $this->page,
+            'keywords' => $request->get('keywords'),
+            'access_type' => $request->get('access_type'),
         ]);
     }
 
@@ -66,6 +66,23 @@ class UserController extends Controller
                 ->withInput()
                 ->with('error', $process['message'] ?? ResponseEntity::DEFAULT_ERROR_MESSAGE);
         }
+    }
+
+    public function detail(int $id): View | RedirectResponse | Response
+    {
+        $data = $this->usecase->getByID($id);
+
+        if (empty($data['data'])) {
+            return redirect()
+                ->intended($this->baseRedirect)
+                ->with('error', ResponseEntity::DEFAULT_ERROR_MESSAGE);
+        }
+        $data = $data['data'] ?? [];
+
+        return view("_admin.users.detail", [
+            'data' => (object) $data,
+            'page' => $this->page,
+        ]);
     }
 
     public function update(int $id): View|RedirectResponse | Response
@@ -101,7 +118,7 @@ class UserController extends Controller
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', $process['message'] ?? ResponseEntity::DEFAULT_ERROR_MESSAGE);
+                ->with('success', ResponseEntity::DEFAULT_ERROR_MESSAGE);
         }
     }
 

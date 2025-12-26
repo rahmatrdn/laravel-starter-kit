@@ -15,22 +15,31 @@ use Illuminate\Support\Facades\Hash;
 
 class UserUsecase extends Usecase
 {
-    public string $className;
-
-    public function __construct()
-    {
-        $this->className = "UserUsecase";
-    }
+    public function __construct() {}
 
     public function getAll(array $filterData = []): array
     {
-        $funcName = $this->className . ".getAll";
-
         try {
             $data = DB::table(DatabaseEntity::USER)
                 ->whereNull("deleted_at")
+                ->when($filterData['keywords'] ?? false, function ($query, $keywords) {
+                    return $query->where(function ($q) use ($keywords) {
+                        $q->where('name', 'like', '%' . $keywords . '%')
+                            ->orWhere('email', 'like', '%' . $keywords . '%');
+                    });
+                })
+                ->when($filterData['access_type'] ?? false, function ($query, $accessType) {
+                    if ($accessType !== 'all') {
+                        return $query->where('access_type', $accessType);
+                    }
+                })
                 ->orderBy("created_at", "desc")
                 ->paginate(20);
+
+            // Append filter parameters to pagination links
+            if (!empty($filterData)) {
+                $data->appends($filterData);
+            }
 
             return Response::buildSuccess(
                 [
@@ -39,10 +48,12 @@ class UserUsecase extends Usecase
                 ResponseEntity::HTTP_SUCCESS
             );
         } catch (Exception $e) {
-            Log::error($e->getMessage(), [
-                "func_name" => $funcName,
-                'user' => Auth::user()
-            ]);
+            Log::error(
+                message: $e->getMessage(),
+                context: [
+                    'method' => __METHOD__,
+                ]
+            );
 
             return Response::buildErrorService($e->getMessage());
         }
@@ -50,8 +61,6 @@ class UserUsecase extends Usecase
 
     public function getByID(int $id): array
     {
-        $funcName = $this->className . ".getByID";
-
         try {
             $data = DB::table(DatabaseEntity::USER)
                 ->whereNull("deleted_at")
@@ -62,10 +71,12 @@ class UserUsecase extends Usecase
                 data: collect($data)->toArray()
             );
         } catch (Exception $e) {
-            Log::error($e->getMessage(), [
-                "func_name" => $funcName,
-                'user' => Auth::user()
-            ]);
+            Log::error(
+                message: $e->getMessage(),
+                context: [
+                    'method' => __METHOD__,
+                ]
+            );
 
             return Response::buildErrorService($e->getMessage());
         }
@@ -73,8 +84,6 @@ class UserUsecase extends Usecase
 
     public function create(Request $data): array
     {
-        $funcName = $this->className . ".create";
-
         $validator = Validator::make($data->all(), [
             'name' => 'required',
             'email' => 'required|email|unique:users,email',
@@ -102,20 +111,21 @@ class UserUsecase extends Usecase
         } catch (Exception $e) {
             DB::rollback();
 
-            Log::error($e->getMessage(), [
-                "func_name" => $funcName,
-                'user' => Auth::user()
-            ]);
+            Log::error(
+                message: $e->getMessage(),
+                context: [
+                    'method' => __METHOD__,
+                ]
+            );
+
             return Response::buildErrorService($e->getMessage());
         }
     }
 
-    public function update(Request $data, int $id): array
+    public function update(Request $data, int $id): array | Exception
     {
-        $funcName = $this->className . ".update";
-
         $validator = Validator::make($data->all(), [
-            'name' => 'required|min:2',
+            'name' => 'required|min:4',
             'email' => 'required|email',
         ]);
 
@@ -132,7 +142,7 @@ class UserUsecase extends Usecase
         DB::beginTransaction();
 
         try {
-            DB::table(DatabaseEntity::USER)
+            DB::table("xxx")
                 ->where("id", $id)
                 ->update($update);
 
@@ -144,18 +154,19 @@ class UserUsecase extends Usecase
         } catch (Exception $e) {
             DB::rollback();
 
-            Log::error($e->getMessage(), [
-                "func_name" => $funcName,
-                'user' => Auth::user()
-            ]);
+            Log::error(
+                message: $e->getMessage(),
+                context: [
+                    'method' => __METHOD__,
+                ]
+            );
+
             return Response::buildErrorService($e->getMessage());
         }
     }
 
     public function delete(int $id): array
     {
-        $funcName = $this->className . ".delete";
-
         DB::beginTransaction();
 
         try {
@@ -179,10 +190,12 @@ class UserUsecase extends Usecase
         } catch (Exception $e) {
             DB::rollback();
 
-            Log::error($e->getMessage(), [
-                "func_name" => $funcName,
-                'user' => Auth::user()
-            ]);
+            Log::error(
+                message: $e->getMessage(),
+                context: [
+                    'method' => __METHOD__,
+                ]
+            );
 
             return Response::buildErrorService($e->getMessage());
         }
@@ -191,7 +204,6 @@ class UserUsecase extends Usecase
     public function changePassword(array $data): array
     {
         $userID = Auth::user()?->id;
-        $funcName = $this->className . ".changePassword";
 
         $validator = Validator::make($data, [
             'current_password' => [
@@ -247,9 +259,12 @@ class UserUsecase extends Usecase
         } catch (Exception $e) {
             DB::rollback();
 
-            Log::error($e->getMessage(), [
-                "func_name" => $funcName,
-            ]);
+            Log::error(
+                message: $e->getMessage(),
+                context: [
+                    'method' => __METHOD__,
+                ]
+            );
 
             return Response::buildErrorService($e->getMessage());
         }
@@ -257,9 +272,7 @@ class UserUsecase extends Usecase
 
     public function resetPassword(int $id): array
     {
-        $funcName = $this->className . ".resetPassword";
-
-        $defaultPassword = 'asdasd';
+        $defaultPassword = 'default';
 
         DB::beginTransaction();
 
@@ -280,10 +293,12 @@ class UserUsecase extends Usecase
         } catch (Exception $e) {
             DB::rollback();
 
-            Log::error($e->getMessage(), [
-                "func_name" => $funcName,
-                'user' => Auth::user()
-            ]);
+            Log::error(
+                message: $e->getMessage(),
+                context: [
+                    'method' => __METHOD__,
+                ]
+            );
 
             return Response::buildErrorService($e->getMessage());
         }
