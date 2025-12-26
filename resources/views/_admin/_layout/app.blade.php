@@ -119,16 +119,95 @@
 
             // Helper to update content from HTML response
             function handleSpaResponse(data, urlToPush) {
-                // Create a virtual DOM to parse the response
-                var $temp = $('<div>').html(data);
+                // Use DOMParser for reliable script extraction (jQuery strips scripts)
+                var parser = new DOMParser();
+                var doc = parser.parseFromString(data, 'text/html');
 
-                // Extract new content
-                var newContent = $temp.find('#main-content').html();
-                var newSidebar = $temp.find('#hs-application-sidebar').html();
+                // Extract new content using native DOM
+                var mainContentEl = doc.querySelector('#main-content');
+                var sidebarEl = doc.querySelector('#hs-application-sidebar');
+
+                var newContent = mainContentEl ? mainContentEl.innerHTML : null;
+                var newSidebar = sidebarEl ? sidebarEl.innerHTML : null;
 
                 if (newContent) {
                     $('#main-content').html(newContent);
                     console.log('Content updated');
+
+                    // Extract page-specific scripts from the response body
+                    // Exclude layout scripts (jQuery, NProgress, Vite bundles, SPA handler)
+                    var layoutScriptPatterns = [
+                        'jquery',
+                        'nprogress',
+                        'vite',
+                        'SPA Script Loaded', // Our SPA handler
+                        'preline/index' // Preline UI bundle (not helper scripts like hs-apexcharts-helpers.js)
+                    ];
+
+                    var allBodyScripts = doc.body.querySelectorAll('script');
+                    var externalScripts = [];
+                    var inlineScripts = [];
+
+                    allBodyScripts.forEach(function(s) {
+                        var src = s.src || '';
+                        var content = s.textContent || '';
+
+                        // Skip layout scripts
+                        var isLayoutScript = layoutScriptPatterns.some(function(pattern) {
+                            return src.toLowerCase().includes(pattern.toLowerCase()) ||
+                                content.includes(pattern);
+                        });
+
+                        if (isLayoutScript) return;
+
+                        if (s.src) {
+                            externalScripts.push(s.src);
+                        } else if (s.textContent.trim()) {
+                            inlineScripts.push(s.textContent);
+                        }
+                    });
+
+                    console.log('Found page scripts:', externalScripts.length, 'external,', inlineScripts.length,
+                        'inline');
+
+                    // Function to load external scripts sequentially
+                    function loadScriptsSequentially(urls, callback) {
+                        if (urls.length === 0) {
+                            callback();
+                            return;
+                        }
+                        var url = urls.shift();
+                        // Check if script is already loaded
+                        if (document.querySelector('script[src="' + url + '"]')) {
+                            loadScriptsSequentially(urls, callback);
+                            return;
+                        }
+                        var script = document.createElement('script');
+                        script.src = url;
+                        script.onload = function() {
+                            loadScriptsSequentially(urls, callback);
+                        };
+                        script.onerror = function() {
+                            console.error('Failed to load script:', url);
+                            loadScriptsSequentially(urls, callback);
+                        };
+                        document.body.appendChild(script);
+                    }
+
+                    loadScriptsSequentially(externalScripts.slice(), function() {
+                        // Execute inline scripts after external ones have loaded
+                        inlineScripts.forEach(function(code) {
+                            try {
+                                eval(code);
+                            } catch (e) {
+                                console.error('Error executing inline script:', e);
+                            }
+                        });
+
+                        // Dispatch load event for scripts waiting on window.load
+                        window.dispatchEvent(new Event('load'));
+                    });
+
                 } else {
                     console.error('#main-content not found in response');
                     return false;
