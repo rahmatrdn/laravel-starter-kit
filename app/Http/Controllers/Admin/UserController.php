@@ -2,21 +2,19 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Illuminate\Http\Request;
 use App\Constants\ResponseConst;
-use Illuminate\Contracts\View\View;
 use App\Http\Controllers\Controller;
 use App\Usecase\UserUsecase;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
     protected array $page = [
-        "route" => "user",
-        "title" => "Pengguna Aplikasi",
+        'route' => 'user',
+        'title' => 'Pengguna Aplikasi',
     ];
 
     protected string $baseRedirect;
@@ -24,10 +22,10 @@ class UserController extends Controller
     public function __construct(
         protected UserUsecase $usecase
     ) {
-        $this->baseRedirect = "admin/" . $this->page['route'];
+        $this->baseRedirect = 'admin/' . $this->page['route'];
     }
 
-    public function index(Request $request): View | Response
+    public function index(Request $request): View|Response
     {
         $data = $this->usecase->getAll([
             'keywords' => $request->get('keywords'),
@@ -35,7 +33,7 @@ class UserController extends Controller
         ]);
         $data = $data['data']['list'] ?? [];
 
-        return view("_admin.users.index", [
+        return view('_admin.users.index', [
             'data' => $data,
             'page' => $this->page,
             'keywords' => $request->get('keywords'),
@@ -43,9 +41,9 @@ class UserController extends Controller
         ]);
     }
 
-    public function add(): View | Response
+    public function add(): View|Response
     {
-        return view("_admin.users.add", [
+        return view('_admin.users.add', [
             'page' => $this->page,
         ]);
     }
@@ -68,7 +66,7 @@ class UserController extends Controller
         }
     }
 
-    public function detail(int $id): View | RedirectResponse | Response
+    public function detail(int $id): View|RedirectResponse|Response
     {
         $data = $this->usecase->getByID($id);
 
@@ -79,13 +77,13 @@ class UserController extends Controller
         }
         $data = $data['data'] ?? [];
 
-        return view("_admin.users.detail", [
+        return view('_admin.users.detail', [
             'data' => (object) $data,
             'page' => $this->page,
         ]);
     }
 
-    public function update(int $id): View|RedirectResponse | Response
+    public function update(int $id): View|RedirectResponse|Response
     {
         $data = $this->usecase->getByID($id);
 
@@ -96,7 +94,7 @@ class UserController extends Controller
         }
         $data = $data['data'] ?? [];
 
-        return view("_admin.users.update", [
+        return view('_admin.users.update', [
             'data' => (object) $data,
             'userId' => $id,
             'page' => $this->page,
@@ -149,6 +147,27 @@ class UserController extends Controller
             return redirect()
                 ->route('admin.users.index')
                 ->with('error', $resetProcess['message'] ?? ResponseConst::DEFAULT_ERROR_MESSAGE);
+        }
+    }
+
+    public function changePassword(): View
+    {
+        return view('_admin.profile.change_password');
+    }
+
+    public function doChangePassword(Request $request): RedirectResponse
+    {
+        $process = $this->usecase->changePassword($request->all());
+
+        if ($process['success']) {
+            return redirect()
+                ->back()
+                ->with('success', 'Password berhasil diubah.');
+        } else {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', $process['message'] ?? ResponseConst::DEFAULT_ERROR_MESSAGE);
         }
     }
 }

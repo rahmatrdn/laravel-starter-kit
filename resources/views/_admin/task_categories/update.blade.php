@@ -8,7 +8,7 @@
             <div class="px-6 py-4 border-b border-gray-200 dark:border-neutral-700 flex justify-between items-center">
                 <div>
                     <h2 class="text-xl font-semibold text-gray-800 dark:text-neutral-200">
-                        Edit Kategori Tugas
+                        Edit {{ $page['title'] }}
                     </h2>
                 </div>
                 <div>

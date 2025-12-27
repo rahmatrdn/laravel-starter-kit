@@ -9,9 +9,9 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Hash;
 
 class UserUsecase extends Usecase
 {
@@ -23,11 +23,11 @@ class UserUsecase extends Usecase
     {
         try {
             $data = DB::table(DatabaseConst::USER)
-                ->whereNull("deleted_at")
+                ->whereNull('deleted_at')
                 ->when($filterData['keywords'] ?? false, function ($query, $keywords) {
                     return $query->where(function ($q) use ($keywords) {
-                        $q->where('name', 'like', '%' . $keywords . '%')
-                            ->orWhere('email', 'like', '%' . $keywords . '%');
+                        $q->where('name', 'like', '%'.$keywords.'%')
+                            ->orWhere('email', 'like', '%'.$keywords.'%');
                     });
                 })
                 ->when($filterData['access_type'] ?? false, function ($query, $accessType) {
@@ -35,11 +35,11 @@ class UserUsecase extends Usecase
                         return $query->where('access_type', $accessType);
                     }
                 })
-                ->orderBy("created_at", "desc")
+                ->orderBy('created_at', 'desc')
                 ->paginate(20);
 
             // Append filter parameters to pagination links
-            if (!empty($filterData)) {
+            if (! empty($filterData)) {
                 $data->appends($filterData);
             }
 
@@ -65,7 +65,7 @@ class UserUsecase extends Usecase
     {
         try {
             $data = DB::table(DatabaseConst::USER)
-                ->whereNull("deleted_at")
+                ->whereNull('deleted_at')
                 ->where('id', $id)
                 ->first();
 
@@ -87,8 +87,8 @@ class UserUsecase extends Usecase
     public function create(Request $data): array
     {
         $validator = Validator::make($data->all(), [
-            'name'        => 'required',
-            'email'       => 'required|email|unique:users,email',
+            'name' => 'required',
+            'email' => 'required|email|unique:users,email',
             'access_type' => 'required',
         ]);
 
@@ -98,13 +98,13 @@ class UserUsecase extends Usecase
         try {
             DB::table(DatabaseConst::USER)
                 ->insert([
-                    'name'        => $data['name'],
-                    'email'       => $data['email'],
+                    'name' => $data['name'],
+                    'email' => $data['email'],
                     'access_type' => $data['access_type'],
-                    'password'    => Hash::make(self::DEFAULT_PASSWORD),
-                    'is_active'   => 1,
-                    'created_by'  => Auth::user()?->id,
-                    'created_at'  => now(),
+                    'password' => Hash::make(self::DEFAULT_PASSWORD),
+                    'is_active' => 1,
+                    'created_by' => Auth::user()?->id,
+                    'created_at' => now(),
                 ]);
 
             DB::commit();
@@ -124,28 +124,28 @@ class UserUsecase extends Usecase
         }
     }
 
-    public function update(Request $data, int $id): array | Exception
+    public function update(Request $data, int $id): array|Exception
     {
         $validator = Validator::make($data->all(), [
-            'name'  => 'required|min:4',
+            'name' => 'required|min:4',
             'email' => 'required|email',
         ]);
 
         $validator->validate();
 
         $update = [
-            'name'        => $data['name'],
-            'email'       => $data['email'],
+            'name' => $data['name'],
+            'email' => $data['email'],
             'access_type' => $data['access_type'],
-            'updated_by'  => Auth::user()?->id,
-            'updated_at'  => now(),
+            'updated_by' => Auth::user()?->id,
+            'updated_at' => now(),
         ];
 
         DB::beginTransaction();
 
         try {
             DB::table(DatabaseConst::USER)
-                ->where("id", $id)
+                ->where('id', $id)
                 ->update($update);
 
             DB::commit();
@@ -179,9 +179,9 @@ class UserUsecase extends Usecase
                     'deleted_at' => now(),
                 ]);
 
-            if (!$delete) {
+            if (! $delete) {
                 DB::rollback();
-                throw new Exception("FAILED DELETE DATA");
+                throw new Exception('FAILED DELETE DATA');
             }
 
             DB::commit();
@@ -208,26 +208,13 @@ class UserUsecase extends Usecase
         $userID = Auth::user()?->id;
 
         $validator = Validator::make($data, [
-            'current_password' => [
-                'required',
-                function ($attribute, $value, $fail) use ($userID) {
-                    $user = DB::table(DatabaseConst::USER)
-                        ->where('id', (int) $userID)
-                        ->first(['password']);
-
-                    if (!Hash::check($value, $user->password)) {
-                        $fail('Password saat ini salah.');
-                    }
-                },
-            ],
-            'password'         => 'required|min:6',
-            're_password'      => 'required|same:password',
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'confirmed', 'min:6', 'different:current_password'],
         ]);
 
         $customAttributes = [
             'current_password' => 'Password Lama',
-            'password'         => 'Password Baru',
-            're_password'      => 'Ulangi Password Baru',
+            'password' => 'Password Baru',
         ];
         $validator->setAttributeNames($customAttributes);
         $validator->validate();
@@ -237,20 +224,22 @@ class UserUsecase extends Usecase
         try {
             $locked = DB::table(DatabaseConst::USER)
                 ->where('id', $userID)
-                ->whereNull("deleted_at")
+                ->whereNull('deleted_at')
                 ->lockForUpdate()
                 ->first(['id']);
 
-            if (!$locked) {
+            if (! $locked) {
                 DB::rollback();
 
-                throw new Exception("FAILED LOCKED DATA");
+                throw new Exception('FAILED LOCKED DATA');
             }
 
             DB::table(DatabaseConst::USER)
-                ->where("id", $userID)
+                ->where('id', $userID)
                 ->update([
-                    'password' => password_hash($data['password'], PASSWORD_DEFAULT),
+                    'password' => Hash::make($data['password']),
+                    'updated_by' => $userID,
+                    'updated_at' => now(),
                 ]);
 
             DB::commit();

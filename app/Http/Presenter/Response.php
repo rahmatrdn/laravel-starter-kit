@@ -13,9 +13,9 @@ class Response
     {
         return [
             'success' => true,
-            'code'    => $code,
+            'code' => $code,
             'message' => $message,
-            'data'    => $data,
+            'data' => $data,
         ];
     }
 
@@ -26,9 +26,9 @@ class Response
     {
         return [
             'success' => true,
-            'code'    => ResponseConst::HTTP_CREATED,
+            'code' => ResponseConst::HTTP_CREATED,
             'message' => $message,
-            'data'    => $data,
+            'data' => $data,
         ];
     }
 
@@ -39,9 +39,9 @@ class Response
     {
         return [
             'success' => false,
-            'code'    => ResponseConst::HTTP_INTERNAL_ERROR,
+            'code' => ResponseConst::HTTP_INTERNAL_ERROR,
             'message' => $message,
-            'data'    => null,
+            'data' => null,
         ];
     }
 
@@ -52,9 +52,9 @@ class Response
     {
         return [
             'success' => false,
-            'code'    => ResponseConst::HTTP_NOT_FOUND,
+            'code' => ResponseConst::HTTP_NOT_FOUND,
             'message' => $message,
-            'data'    => null,
+            'data' => null,
         ];
     }
 
@@ -65,9 +65,9 @@ class Response
     {
         return [
             'success' => false,
-            'code'    => $code,
+            'code' => $code,
             'message' => $message,
-            'data'    => $data,
+            'data' => $data,
         ];
     }
 }

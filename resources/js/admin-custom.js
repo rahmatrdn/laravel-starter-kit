@@ -123,6 +123,14 @@ $(document).ready(function () {
             window.HSStaticMethods.autoInit();
         }
 
+        // Re-initialize Flatpickr
+        if (window.flatpickr) {
+            window.flatpickr(".datepicker", {
+                dateFormat: "Y-m-d",
+                allowInput: true
+            });
+        }
+
         return true;
     }
 

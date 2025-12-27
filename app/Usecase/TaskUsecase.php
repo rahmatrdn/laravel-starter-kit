@@ -12,30 +12,42 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
-class TaskCategoryUsecase extends Usecase
+class TaskUsecase extends Usecase
 {
-    public function __construct() {}
-
     public function getAll(array $filterData = []): array
     {
         try {
-            $query = DB::table(DatabaseConst::TASK_CATEGORY)
-                ->whereNull('deleted_at')
+            $query = DB::table(DatabaseConst::TASK.' as t')
+                ->leftJoin(DatabaseConst::TASK_CATEGORY.' as tc', 't.task_category_id', '=', 'tc.id')
+                ->select('t.*', 'tc.name as category_name')
+                ->whereNull('t.deleted_at')
                 ->when($filterData['keywords'] ?? false, function ($query, $keywords) {
-                    return $query->where('name', 'like', '%'.$keywords.'%');
+                    return $query->where('t.title', 'like', '%'.$keywords.'%');
                 })
-                ->orderBy('created_at', 'desc');
+                ->when($filterData['status'] ?? false, function ($query, $status) {
+                    return $query->where('t.status', $status);
+                })
+                ->when($filterData['category_id'] ?? false, function ($query, $categoryId) {
+                    return $query->where('t.task_category_id', $categoryId);
+                })
+                ->orderBy('t.created_at', 'desc');
 
             if (! empty($filterData['no_pagination'])) {
                 $data = $query->get();
             } else {
                 $data = $query->paginate(20);
 
-                // Append filter parameters to pagination links
                 if (! empty($filterData)) {
                     $data->appends($filterData);
                 }
             }
+
+            // Manually cast dates for the collection
+            $data->getCollection()->transform(function ($item) {
+                $item->task_date = \Carbon\Carbon::parse($item->task_date);
+
+                return $item;
+            });
 
             return Response::buildSuccess(
                 [
@@ -58,10 +70,17 @@ class TaskCategoryUsecase extends Usecase
     public function getByID(int $id): array
     {
         try {
-            $data = DB::table(DatabaseConst::TASK_CATEGORY)
-                ->whereNull('deleted_at')
+            $data = DB::table(DatabaseConst::TASK)
                 ->where('id', $id)
+                ->whereNull('deleted_at')
                 ->first();
+
+            if (! $data) {
+                return Response::buildErrorService(ResponseConst::ERROR_MESSAGE_NOT_FOUND);
+            }
+
+            // Parse types manually since we are not using Eloquent Casts
+            $data->task_date = \Carbon\Carbon::parse($data->task_date);
 
             return Response::buildSuccess(
                 data: collect($data)->toArray()
@@ -81,19 +100,23 @@ class TaskCategoryUsecase extends Usecase
     public function create(Request $data): array
     {
         $validator = Validator::make($data->all(), [
-            'name' => 'required',
+            'title' => 'required|string|max:255',
+            'task_category_id' => 'required|exists:task_categories,id',
+            'task_date' => 'required|date',
+            'status' => 'required|integer',
+            'description' => 'nullable|string',
         ]);
 
         $validator->validate();
 
         DB::beginTransaction();
         try {
-            DB::table(DatabaseConst::TASK_CATEGORY)
-                ->insert([
-                    'name' => $data['name'],
-                    'created_by' => Auth::user()?->id,
-                    'created_at' => now(),
-                ]);
+            $payload = $data->only(['title', 'task_category_id', 'task_date', 'status', 'description']);
+            $payload['created_by'] = Auth::user()?->id;
+            $payload['created_at'] = now();
+            $payload['updated_at'] = now();
+
+            DB::table(DatabaseConst::TASK)->insert($payload);
 
             DB::commit();
 
@@ -112,26 +135,28 @@ class TaskCategoryUsecase extends Usecase
         }
     }
 
-    public function update(Request $data, int $id): array|Exception
+    public function update(Request $data, int $id): array
     {
         $validator = Validator::make($data->all(), [
-            'name' => 'required',
+            'title' => 'required|string|max:255',
+            'task_category_id' => 'required|exists:task_categories,id',
+            'task_date' => 'required|date',
+            'status' => 'required|integer',
+            'description' => 'nullable|string',
         ]);
 
         $validator->validate();
 
-        $update = [
-            'name' => $data['name'],
-            'updated_by' => Auth::user()?->id,
-            'updated_at' => now(),
-        ];
-
         DB::beginTransaction();
 
         try {
-            DB::table(DatabaseConst::TASK_CATEGORY)
+            $payload = $data->only(['title', 'task_category_id', 'task_date', 'status', 'description']);
+            $payload['updated_by'] = Auth::user()?->id;
+            $payload['updated_at'] = now();
+
+            DB::table(DatabaseConst::TASK)
                 ->where('id', $id)
-                ->update($update);
+                ->update($payload);
 
             DB::commit();
 
@@ -157,7 +182,7 @@ class TaskCategoryUsecase extends Usecase
         DB::beginTransaction();
 
         try {
-            $delete = DB::table(DatabaseConst::TASK_CATEGORY)
+            $delete = DB::table(DatabaseConst::TASK)
                 ->where('id', $id)
                 ->update([
                     'deleted_by' => Auth::user()?->id,
@@ -174,7 +199,7 @@ class TaskCategoryUsecase extends Usecase
             return Response::buildSuccess(
                 message: ResponseConst::SUCCESS_MESSAGE_DELETED
             );
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             DB::rollback();
 
             Log::error(

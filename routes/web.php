@@ -1,9 +1,11 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\TaskCategoryController;
+use App\Http\Controllers\Admin\TaskController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\AuthController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('admin.dashboard');
@@ -37,5 +39,19 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/update/{id}', [TaskCategoryController::class, 'update'])->name('update');
         Route::post('/update/{id}', [TaskCategoryController::class, 'doUpdate'])->name('doUpdate');
         Route::delete('/delete/{id}', [TaskCategoryController::class, 'delete'])->name('delete');
+    });
+
+    Route::prefix('tasks')->name('tasks.')->group(function () {
+        Route::get('/', [TaskController::class, 'index'])->name('index');
+        Route::get('/add', [TaskController::class, 'add'])->name('add');
+        Route::post('/create', [TaskController::class, 'doCreate'])->name('do_create');
+        Route::get('/update/{id}', [TaskController::class, 'update'])->name('update');
+        Route::post('/update/{id}', [TaskController::class, 'doUpdate'])->name('do_update');
+        Route::delete('/delete/{id}', [TaskController::class, 'delete'])->name('delete');
+    });
+
+    Route::prefix('profile')->name('profile.')->group(function () {
+        Route::get('/change-password', [UserController::class, 'changePassword'])->name('change_password');
+        Route::post('/change-password', [UserController::class, 'doChangePassword'])->name('do_change_password');
     });
 });

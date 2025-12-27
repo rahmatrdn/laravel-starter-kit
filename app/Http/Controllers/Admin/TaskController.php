@@ -3,24 +3,27 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Constants\ResponseConst;
+use App\Constants\TaskStatusConst;
 use App\Http\Controllers\Controller;
 use App\Usecase\TaskCategoryUsecase;
+use App\Usecase\TaskUsecase;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
-class TaskCategoryController extends Controller
+class TaskController extends Controller
 {
     protected array $page = [
-        'route' => 'task_categories',
-        'title' => 'Kategori Tugas',
+        'route' => 'tasks',
+        'title' => 'Manajemen Tugas',
     ];
 
     protected string $baseRedirect;
 
     public function __construct(
-        protected TaskCategoryUsecase $usecase
+        protected TaskUsecase $usecase,
+        protected TaskCategoryUsecase $categoryUsecase
     ) {
         $this->baseRedirect = 'admin/'.$this->page['route'];
     }
@@ -29,20 +32,34 @@ class TaskCategoryController extends Controller
     {
         $data = $this->usecase->getAll([
             'keywords' => $request->get('keywords'),
+            'status' => $request->get('status'),
+            'category_id' => $request->get('category_id'),
         ]);
         $data = $data['data']['list'] ?? [];
 
-        return view('_admin.task_categories.index', [
+        $categories = $this->categoryUsecase->getAll(['no_pagination' => true]);
+        $categories = $categories['data']['list'] ?? [];
+
+        return view('_admin.tasks.index', [
             'data' => $data,
             'page' => $this->page,
             'keywords' => $request->get('keywords'),
+            'status' => $request->get('status'),
+            'category_id' => $request->get('category_id'),
+            'categories' => $categories,
+            'statuses' => TaskStatusConst::getList(),
         ]);
     }
 
     public function add(): View|Response
     {
-        return view('_admin.task_categories.add', [
+        $categories = $this->categoryUsecase->getAll(['no_pagination' => true]);
+        $categories = $categories['data']['list'] ?? [];
+
+        return view('_admin.tasks.add', [
             'page' => $this->page,
+            'categories' => $categories,
+            'statuses' => TaskStatusConst::getList(),
         ]);
     }
 
@@ -54,7 +71,7 @@ class TaskCategoryController extends Controller
 
         if ($process['success']) {
             return redirect()
-                ->route('admin.task_categories.index')
+                ->route('admin.tasks.index')
                 ->with('success', ResponseConst::SUCCESS_MESSAGE_CREATED);
         } else {
             return redirect()
@@ -75,10 +92,15 @@ class TaskCategoryController extends Controller
         }
         $data = $data['data'] ?? [];
 
-        return view('_admin.task_categories.update', [
+        $categories = $this->categoryUsecase->getAll(['no_pagination' => true]);
+        $categories = $categories['data']['list'] ?? [];
+
+        return view('_admin.tasks.update', [
             'data' => (object) $data,
             'id' => $id,
             'page' => $this->page,
+            'categories' => $categories,
+            'statuses' => TaskStatusConst::getList(),
         ]);
     }
 
@@ -91,13 +113,13 @@ class TaskCategoryController extends Controller
 
         if ($process['success']) {
             return redirect()
-                ->route('admin.task_categories.index')
+                ->route('admin.tasks.index')
                 ->with('success', ResponseConst::SUCCESS_MESSAGE_UPDATED);
         } else {
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('success', ResponseConst::DEFAULT_ERROR_MESSAGE);
+                ->with('error', ResponseConst::DEFAULT_ERROR_MESSAGE);
         }
     }
 
@@ -107,11 +129,11 @@ class TaskCategoryController extends Controller
 
         if ($process['success']) {
             return redirect()
-                ->route('admin.task_categories.index')
+                ->route('admin.tasks.index')
                 ->with('success', ResponseConst::SUCCESS_MESSAGE_DELETED);
         } else {
             return redirect()
-                ->route('admin.task_categories.index')
+                ->route('admin.tasks.index')
                 ->with('error', $process['message'] ?? ResponseConst::DEFAULT_ERROR_MESSAGE);
         }
     }

@@ -3,31 +3,31 @@
 @section('title', 'Kategori Tugas')
 
 @section('content')
+    <div class="grid gap-3 md:flex md:justify-between md:items-center py-4">
+        <div>
+            <h1 class="text-2xl font-extrabold text-gray-800 dark:text-neutral-200 mb-1">
+                Data {{ $page['title'] }}
+            </h1>
+            <p class="text-md text-gray-400 dark:text-neutral-400">
+                Manajemen Kategori Tugas
+            </p>
+        </div>
+
+        <div>
+            <div class="inline-flex gap-x-2">
+                <a navigate
+                    class="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none font-bolder"
+                    href="{{ route('admin.task_categories.add') }}">
+                    @include('_admin._layout.icons.add')
+                    Tambah Data
+                </a>
+            </div>
+        </div>
+    </div>
     <div class="flex flex-col">
         <div class="overflow-x-auto">
             <div class="min-w-full inline-block align-middle">
                 <div class="overflow-hidden">
-                    <div class="grid gap-3 md:flex md:justify-between md:items-center py-4">
-                        <div>
-                            <h1 class="text-2xl font-extrabold text-gray-800 dark:text-neutral-200 mb-1">
-                                Data {{ $page['title'] }}
-                            </h1>
-                            <p class="text-md text-gray-400 dark:text-neutral-400">
-                                Manajemen Kategori Tugas
-                            </p>
-                        </div>
-
-                        <div>
-                            <div class="inline-flex gap-x-2">
-                                <a navigate
-                                    class="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none font-bolder"
-                                    href="{{ route('admin.task_categories.add') }}">
-                                    @include('_admin._layout.icons.add')
-                                    Tambah Data
-                                </a>
-                            </div>
-                        </div>
-                    </div>
 
                     <div class="px-2 pt-4">
                         <form action="{{ route('admin.task_categories.index') }}" method="GET" navigate-form
@@ -36,19 +36,19 @@
                                 <label for="keywords" class="sr-only">Search</label>
                                 <div class="relative">
                                     <input type="text" name="keywords" id="keywords" value="{{ $keywords ?? '' }}"
-                                        class="py-2 px-3 block w-full border-gray-200 rounded-lg text-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 
+                                        class="py-1 px-3 block w-full border-gray-200 rounded-lg text-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 
                                         placeholder-neutral-300 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
                                         placeholder="Cari Nama Kategori">
                                 </div>
                             </div>
                             <div>
                                 <button type="submit"
-                                    class="py-2 px-3 inline-flex items-center gap-x-1 text-sm font-semibold rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-gray-600 cursor-pointer">
+                                    class="py-1 px-3 inline-flex items-center gap-x-1 text-sm font-semibold rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-gray-600 cursor-pointer">
                                     @include('_admin._layout.icons.search')
                                     Cari
                                 </button>
                                 @if (!empty($keywords))
-                                    <a class="py-2 px-3 inline-flex items-center gap-x-1 text-sm font-semibold rounded-lg border border-blue-600 text-blue-600 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 disabled:opacity-50 disabled:pointer-events-none dark:border-blue-500 dark:text-blue-500 dark:hover:bg-blue-500/10 dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-gray-600 cursor-pointer"
+                                    <a class="py-1 px-3 inline-flex items-center gap-x-1 text-sm font-semibold rounded-lg border border-blue-600 text-blue-600 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 disabled:opacity-50 disabled:pointer-events-none dark:border-blue-500 dark:text-blue-500 dark:hover:bg-blue-500/10 dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-gray-600 cursor-pointer"
                                         href="{{ route('admin.task_categories.index') }}">
                                         @include('_admin._layout.icons.reset')
                                         Reset
@@ -58,59 +58,40 @@
                         </form>
                     </div>
 
-                    <div class="mx-0 my-4 overflow-x-auto border border-gray-200 rounded-lg dark:border-neutral-700">
-                        <table class="w-full divide-y divide-gray-200 dark:divide-neutral-700">
-                            <thead class=" dark:bg-neutral-800">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-start">
-                                        <div class="flex items-center gap-x-2">
-                                            <span
-                                                class="text-xs font-semibold uppercase text-gray-800 dark:text-neutral-200">
-                                                Nama Kategori
-                                            </span>
-                                        </div>
-                                    </th>
-
-                                    <th scope="col" class="px-6 py-3 text-end"></th>
-                                </tr>
-                            </thead>
-
-                            <tbody class="divide-y divide-gray-200 dark:divide-neutral-700">
-                                @forelse($data as $d)
-                                    <tr class="hover:bg-gray-100 dark:hover:bg-neutral-700">
-                                        <td class="size-px whitespace-nowrap">
-                                            <div class="px-6 py-3">
-                                                <span
-                                                    class="block text-sm font-semibold text-gray-800 dark:text-neutral-200">{{ $d->name }}</span>
-                                            </div>
-                                        </td>
-                                        <td class="size-px whitespace-nowrap">
-                                            <div class="px-6 py-1.5 flex items-center gap-x-1 justify-end">
-                                                <a navigate
-                                                    class="inline-flex items-center justify-center size-8 text-sm font-semibold rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:bg-blue-100 disabled:opacity-50 disabled:pointer-events-none dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-500 dark:hover:bg-blue-800/30 dark:hover:border-blue-700"
-                                                    href="{{ route('admin.task_categories.update', $d->id) }}"
-                                                    title="Edit">
-                                                    @include('_admin._layout.icons.pencil')
-                                                </a>
-                                                <button type="button"
-                                                    class="inline-flex items-center justify-center size-8 text-sm font-semibold rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-300 focus:outline-none focus:bg-red-100 disabled:opacity-50 disabled:pointer-events-none dark:border-red-800 dark:bg-red-900/20 dark:text-red-500 dark:hover:bg-red-800/30 dark:hover:border-red-700 cursor-pointer"
-                                                    title="Delete" data-hs-overlay="#delete-modal"
-                                                    onclick="setDeleteData('{{ $d->id }}', '{{ $d->name }}')">
-                                                    @include('_admin._layout.icons.trash')
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="6"
-                                            class="px-6 py-4 text-center text-sm text-gray-500 dark:text-neutral-500">
-                                            <x-admin.empty-state />
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 my-4">
+                        @forelse($data as $d)
+                            <div
+                                class="flex flex-col bg-white border-1 border-gray-200 shadow-sm rounded-2xl dark:bg-neutral-800 dark:border-neutral-700">
+                                <div class="p-4 md:p-5 flex flex-col h-full">
+                                    <div class="grow">
+                                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">
+                                            {{ $d->name }}
+                                        </h3>
+                                    </div>
+                                    <div class="mt-4 flex gap-x-2">
+                                        <a navigate href="{{ route('admin.task_categories.update', $d->id) }}"
+                                            class="py-2 px-3 inline-flex justify-center items-center gap-x-2 text-xs font-medium rounded-lg border border-transparent bg-blue-100 text-blue-800 hover:bg-blue-200 focus:outline-none focus:bg-blue-200 disabled:opacity-50 disabled:pointer-events-none dark:text-blue-400 dark:bg-blue-800/30 dark:hover:bg-blue-800/20 dark:focus:bg-blue-800/20">
+                                            @include('_admin._layout.icons.pencil')
+                                            Edit
+                                        </a>
+                                        <button type="button"
+                                            class="py-2 px-3 inline-flex justify-center items-center gap-x-2 text-xs font-medium rounded-lg border border-transparent bg-red-100 text-red-800 hover:bg-red-200 focus:outline-none focus:bg-red-200 disabled:opacity-50 disabled:pointer-events-none dark:text-red-500 dark:bg-red-800/30 dark:hover:bg-red-800/20 dark:focus:bg-red-800/20 cursor-pointer"
+                                            data-hs-overlay="#delete-modal"
+                                            onclick="setDeleteData('{{ $d->id }}', '{{ $d->name }}')">
+                                            @include('_admin._layout.icons.trash')
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="col-span-full">
+                                <div
+                                    class="min-h-60 flex flex-col bg-white  dark:bg-neutral-800 dark:border-neutral-700 justify-center items-center">
+                                    <x-admin.empty-state />
+                                </div>
+                            </div>
+                        @endforelse
                     </div>
 
                     @if (count($data) > 0 && $data->hasPages())

@@ -1,10 +1,6 @@
 @extends('_admin._layout.app')
 
-@section('title', 'Pengguna Aplikasi')
-
-@php
-    use App\Constants\UserConst;
-@endphp
+@section('title', 'Manajemen Tugas')
 
 @section('content')
     <div class="grid gap-3 md:flex md:justify-between md:items-center py-4">
@@ -13,7 +9,7 @@
                 Data {{ $page['title'] }}
             </h1>
             <p class="text-md text-gray-400 dark:text-neutral-400">
-                Pengguna Aplikasi
+                Manajemen Tugas
             </p>
         </div>
 
@@ -21,7 +17,7 @@
             <div class="inline-flex gap-x-2">
                 <a navigate
                     class="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none font-bolder"
-                    href="{{ route('admin.users.add') }}">
+                    href="{{ route('admin.tasks.add') }}">
                     @include('_admin._layout.icons.add')
                     Tambah Data
                 </a>
@@ -34,7 +30,7 @@
                 <div class="overflow-hidden">
 
                     <div class="px-2 pt-4">
-                        <form action="{{ route('admin.users.index') }}" method="GET" navigate-form
+                        <form action="{{ route('admin.tasks.index') }}" method="GET" navigate-form
                             class="flex flex-col sm:flex-row gap-3">
                             <div class="sm:w-64">
                                 <label for="keywords" class="sr-only">Search</label>
@@ -42,19 +38,28 @@
                                     <input type="text" name="keywords" id="keywords" value="{{ $keywords ?? '' }}"
                                         class="py-1 px-3 block w-full border-gray-200 rounded-lg text-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 
                                         placeholder-neutral-300 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-                                        placeholder="Nama atau Email">
+                                        placeholder="Cari Judul Tugas">
                                 </div>
                             </div>
                             <div class="sm:w-48">
-                                <select name="access_type"
-                                    class="py-1 px-3 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600">
-                                    <option value="all" {{ ($access_type ?? 'all') == 'all' ? 'selected' : '' }}>
-                                        Semua Hak Akses
-                                    </option>
-                                    <option value="admin" {{ ($access_type ?? '') == 'admin' ? 'selected' : '' }}>Admin
-                                    </option>
-                                    <option value="user" {{ ($access_type ?? '') == 'user' ? 'selected' : '' }}>User
-                                    </option>
+                                <select name="status"
+                                    class="py-1 px-3 pe-9 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600">
+                                    <option value="">Semua Status</option>
+                                    @foreach ($statuses as $key => $label)
+                                        <option value="{{ $key }}" {{ ($status ?? '') == $key ? 'selected' : '' }}>
+                                            {{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="sm:w-48">
+                                <select name="category_id"
+                                    class="py-1 px-3 pe-9 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600">
+                                    <option value="">Semua Kategori</option>
+                                    @foreach ($categories as $cat)
+                                        <option value="{{ $cat->id }}"
+                                            {{ ($category_id ?? '') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}
+                                        </option>
+                                    @endforeach
                                 </select>
                             </div>
                             <div>
@@ -63,9 +68,9 @@
                                     @include('_admin._layout.icons.search')
                                     Cari
                                 </button>
-                                @if (!empty($keywords) || ($access_type ?? 'all') !== 'all')
+                                @if (!empty($keywords) || !empty($status) || !empty($category_id))
                                     <a class="py-1 px-3 inline-flex items-center gap-x-1 text-sm font-semibold rounded-lg border border-blue-600 text-blue-600 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 disabled:opacity-50 disabled:pointer-events-none dark:border-blue-500 dark:text-blue-500 dark:hover:bg-blue-500/10 dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-gray-600 cursor-pointer"
-                                        href="{{ route('admin.users.index') }}">
+                                        href="{{ route('admin.tasks.index') }}">
                                         @include('_admin._layout.icons.reset')
                                         Reset
                                     </a>
@@ -76,26 +81,40 @@
 
                     <div class="mx-0 my-4 overflow-x-auto border border-gray-200 rounded-lg dark:border-neutral-700">
                         <table class="w-full divide-y divide-gray-200 dark:divide-neutral-700">
-                            <thead class=" dark:bg-neutral-800">
+                            <thead class="bg-gray-50 dark:bg-neutral-700">
                                 <tr>
                                     <th scope="col" class="px-6 py-3 text-start">
                                         <div class="flex items-center gap-x-2">
                                             <span
                                                 class="text-xs font-semibold uppercase text-gray-800 dark:text-neutral-200">
-                                                Nama
+                                                Judul Tugas
                                             </span>
                                         </div>
                                     </th>
-
                                     <th scope="col" class="px-6 py-3 text-start">
                                         <div class="flex items-center gap-x-2">
                                             <span
                                                 class="text-xs font-semibold uppercase text-gray-800 dark:text-neutral-200">
-                                                Hak Akses
+                                                Kategori
                                             </span>
                                         </div>
                                     </th>
-
+                                    <th scope="col" class="px-6 py-3 text-start">
+                                        <div class="flex items-center gap-x-2">
+                                            <span
+                                                class="text-xs font-semibold uppercase text-gray-800 dark:text-neutral-200">
+                                                Tanggal
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-start">
+                                        <div class="flex items-center gap-x-2">
+                                            <span
+                                                class="text-xs font-semibold uppercase text-gray-800 dark:text-neutral-200">
+                                                Status
+                                            </span>
+                                        </div>
+                                    </th>
                                     <th scope="col" class="px-6 py-3 text-end"></th>
                                 </tr>
                             </thead>
@@ -105,47 +124,49 @@
                                     <tr class="hover:bg-gray-100 dark:hover:bg-neutral-700">
                                         <td class="size-px whitespace-nowrap">
                                             <div class="px-6 py-3">
-                                                <div class="flex items-center gap-x-3">
-                                                    <span
-                                                        class="inline-flex items-center justify-center size-9.5 rounded-full bg-white border border-gray-300 dark:bg-neutral-800 dark:border-neutral-700">
-                                                        <span
-                                                            class="font-medium text-sm text-gray-800 dark:text-neutral-200">
-                                                            {{ strtoupper(substr($d->name, 0, 1)) }}
-                                                        </span>
-                                                    </span>
-                                                    <div class="grow">
-                                                        <span
-                                                            class="block text-sm font-semibold text-gray-800 dark:text-neutral-200">{{ $d->name }}</span>
-                                                        <span
-                                                            class="block text-sm text-gray-500 dark:text-neutral-500">{{ $d->email }}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="h-px w-72 whitespace-nowrap">
-                                            <div class="px-6 py-3">
                                                 <span
-                                                    class="block text-sm font-semibold text-gray-800 dark:text-neutral-200">
-                                                    {{ UserConst::getAccessTypes()[$d->access_type] ?? '-' }}
-                                                </span>
+                                                    class="block text-sm font-semibold text-gray-800 dark:text-neutral-200">{{ $d->title }}</span>
                                             </div>
                                         </td>
                                         <td class="size-px whitespace-nowrap">
-                                            <div class="px-6 py-1.5 flex items-center gap-x-1">
+                                            <div class="px-6 py-3">
+                                                <span
+                                                    class="block text-sm text-gray-800 dark:text-neutral-200">{{ $d->category_name ?? '-' }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="size-px whitespace-nowrap">
+                                            <div class="px-6 py-3">
+                                                <span
+                                                    class="block text-sm text-gray-800 dark:text-neutral-200">{{ \Carbon\Carbon::parse($d->task_date)->format('d M Y') }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="size-px whitespace-nowrap">
+                                            <div class="px-6 py-3">
+                                                @if ($d->status == \App\Constants\TaskStatusConst::TODO)
+                                                    <span
+                                                        class="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-white/10 dark:text-white">To
+                                                        Do</span>
+                                                @elseif($d->status == \App\Constants\TaskStatusConst::IN_PROGRESS)
+                                                    <span
+                                                        class="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800/30 dark:text-blue-500">In
+                                                        Progress</span>
+                                                @elseif($d->status == \App\Constants\TaskStatusConst::DONE)
+                                                    <span
+                                                        class="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-teal-100 text-teal-800 dark:bg-teal-800/30 dark:text-teal-500">Done</span>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td class="size-px whitespace-nowrap">
+                                            <div class="px-6 py-1.5 flex items-center gap-x-2 justify-end">
                                                 <a navigate
-                                                    class="inline-flex items-center justify-center size-8 text-sm font-semibold rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
-                                                    href="{{ route('admin.users.detail', $d->id) }}" title="View">
-                                                    @include('_admin._layout.icons.view_detail')
-                                                </a>
-                                                <a navigate
-                                                    class="inline-flex items-center justify-center size-8 text-sm font-semibold rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:bg-blue-100 disabled:opacity-50 disabled:pointer-events-none dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-500 dark:hover:bg-blue-800/30 dark:hover:border-blue-700"
-                                                    href="{{ route('admin.users.update', $d->id) }}" title="Edit">
+                                                    class="py-2 px-3 inline-flex justify-center items-center gap-x-2 text-xs font-medium rounded-lg border border-transparent bg-blue-100 text-blue-800 hover:bg-blue-200 focus:outline-none focus:bg-blue-200 disabled:opacity-50 disabled:pointer-events-none dark:text-blue-400 dark:bg-blue-800/30 dark:hover:bg-blue-800/20 dark:focus:bg-blue-800/20"
+                                                    href="{{ route('admin.tasks.update', $d->id) }}">
                                                     @include('_admin._layout.icons.pencil')
                                                 </a>
                                                 <button type="button"
-                                                    class="inline-flex items-center justify-center size-8 text-sm font-semibold rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-300 focus:outline-none focus:bg-red-100 disabled:opacity-50 disabled:pointer-events-none dark:border-red-800 dark:bg-red-900/20 dark:text-red-500 dark:hover:bg-red-800/30 dark:hover:border-red-700 cursor-pointer"
+                                                    class="py-2 px-3 inline-flex justify-center items-center gap-x-2 text-xs font-medium rounded-lg border border-transparent bg-red-100 text-red-800 hover:bg-red-200 focus:outline-none focus:bg-red-200 disabled:opacity-50 disabled:pointer-events-none dark:text-red-500 dark:bg-red-800/30 dark:hover:bg-red-800/20 dark:focus:bg-red-800/20 cursor-pointer"
                                                     title="Delete" data-hs-overlay="#delete-modal"
-                                                    onclick="setDeleteData('{{ $d->id }}', '{{ $d->name }}')">
+                                                    onclick="setDeleteData('{{ $d->id }}', '{{ $d->title }}')">
                                                     @include('_admin._layout.icons.trash')
                                                 </button>
                                             </div>
@@ -200,10 +221,10 @@
                     <!-- End Icon -->
 
                     <h3 id="delete-modal-label" class="mb-2 text-xl font-bold text-gray-800 dark:text-neutral-200">
-                        Hapus Pengguna
+                        Hapus Tugas
                     </h3>
                     <p class="text-gray-500 dark:text-neutral-500">
-                        Apakah Anda yakin ingin menghapus <span id="delete-user-name"
+                        Apakah Anda yakin ingin menghapus <span id="delete-item-name"
                             class="font-semibold text-gray-800 dark:text-neutral-200"></span>?
                         <br>Tindakan ini tidak dapat dibatalkan.
                     </p>
@@ -230,8 +251,8 @@
 
     <script>
         function setDeleteData(id, name) {
-            document.getElementById('delete-user-name').textContent = name;
-            document.getElementById('delete-form').action = '{{ url('admin/users/delete') }}/' + id;
+            document.getElementById('delete-item-name').textContent = name;
+            document.getElementById('delete-form').action = '{{ url('admin/tasks/delete') }}/' + id;
         }
     </script>
 @endsection

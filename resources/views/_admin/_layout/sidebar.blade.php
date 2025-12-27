@@ -33,17 +33,26 @@
                 <ul class="flex flex-col space-y-1">
                     <li>
                         <a navigate
-                            class="flex items-center gap-x-3.5 py-2.5 px-3 {{ request()->routeIs('admin.dashboard') ? 'bg-blue-100 text-blue-600 dark:bg-neutral-700 dark:text-blue-400' : 'text-gray-800 dark:text-white' }} text-sm rounded-lg hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700"
+                            class="flex items-center gap-x-3.5 py-2.5 px-3 {{ request()->routeIs('admin.dashboard') ? 'bg-blue-100 text-blue-600 dark:bg-neutral-700 dark:text-blue-400' : 'text-gray-800 dark:text-white' }} text-sm rounded-lg hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 font-semibold"
                             href="{{ route('admin.dashboard') }}">
                             @include('_admin._layout.icons.sidebar.dashboard')
                             Dashboard
                         </a>
                     </li>
 
+                    <li>
+                        <a navigate
+                            class="flex items-center gap-x-3.5 py-2.5 px-3 {{ request()->routeIs('admin.tasks.*') ? 'bg-blue-100 text-blue-600 dark:bg-neutral-700 dark:text-blue-400' : 'text-gray-800 dark:text-white' }} text-sm rounded-lg hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 font-semibold"
+                            href="{{ route('admin.tasks.index') }}">
+                            @include('_admin._layout.icons.sidebar.task')
+                            Manajemen Tugas
+                        </a>
+                    </li>
+
                     <li class="hs-accordion {{ request()->routeIs('admin.users.*') || request()->routeIs('admin.task_categories.*') ? 'active' : '' }}"
                         id="projects-accordion">
                         <button type="button"
-                            class="hs-accordion-toggle w-full text-start flex items-center gap-x-3.5  py-2.5 px-3 text-sm text-gray-800 rounded-lg hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 dark:text-neutral-200"
+                            class="hs-accordion-toggle w-full text-start flex items-center gap-x-3.5  py-2.5 px-3 text-sm text-gray-800 rounded-lg hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 dark:text-neutral-200 cursor-pointer font-semibold"
                             aria-expanded="true" aria-controls="projects-accordion-child">
                             @include('_admin._layout.icons.sidebar.data_master')
                             Data Master
@@ -59,16 +68,16 @@
                             <ul class="ps-8 pt-1 space-y-1">
                                 <li>
                                     <a navigate
-                                        class="flex items-center gap-x-3.5  py-2.5 px-3 text-sm rounded-lg hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 {{ request()->routeIs('admin.users.*') ? 'bg-blue-100 text-blue-600 dark:bg-neutral-700 dark:text-blue-400' : 'text-gray-800 dark:text-neutral-200' }}"
-                                        href="{{ route('admin.users.index') }}">
-                                        Pengguna Aplikasi
+                                        class="flex items-center gap-x-3.5  py-2.5 px-3 text-sm rounded-lg hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 {{ request()->routeIs('admin.task_categories.*') ? 'bg-blue-100 text-blue-600 dark:bg-neutral-700 dark:text-blue-400' : 'text-gray-800 dark:text-neutral-200' }}"
+                                        href="{{ route('admin.task_categories.index') }}">
+                                        Kategori Tugas
                                     </a>
                                 </li>
                                 <li>
                                     <a navigate
-                                        class="flex items-center gap-x-3.5  py-2.5 px-3 text-sm rounded-lg hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 {{ request()->routeIs('admin.task_categories.*') ? 'bg-blue-100 text-blue-600 dark:bg-neutral-700 dark:text-blue-400' : 'text-gray-800 dark:text-neutral-200' }}"
-                                        href="{{ route('admin.task_categories.index') }}">
-                                        Kategori Tugas
+                                        class="flex items-center gap-x-3.5  py-2.5 px-3 text-sm rounded-lg hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 {{ request()->routeIs('admin.users.*') ? 'bg-blue-100 text-blue-600 dark:bg-neutral-700 dark:text-blue-400' : 'text-gray-800 dark:text-neutral-200' }}"
+                                        href="{{ route('admin.users.index') }}">
+                                        Pengguna Aplikasi
                                     </a>
                                 </li>
                             </ul>
@@ -137,10 +146,11 @@
                             </div>
                         </div>
                         <!-- End Switch/Toggle -->
-                        <a class="flex items-center gap-x-3.5 py-2 px-3 rounded-lg text-sm text-gray-800 hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-300 dark:focus:bg-neutral-700 dark:focus:text-neutral-300"
-                            href="#">
-                            @include('_admin._layout.icons.sidebar.settings')
-                            Pengaturan Aplikasi
+                        <a navigate
+                            class="flex items-center gap-x-3.5 py-2 px-3 rounded-lg text-sm text-gray-800 hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-300 dark:focus:bg-neutral-700 dark:focus:text-neutral-300"
+                            href="{{ route('admin.profile.change_password') }}">
+                            @include('_admin._layout.icons.sidebar.change-password')
+                            Ubah Password
                         </a>
                         <form action="{{ route('logout') }}" method="POST"
                             onsubmit="return confirm('Apakah anda yakin ingin keluar?');">
